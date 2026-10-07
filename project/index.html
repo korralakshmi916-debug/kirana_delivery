@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiran Shop Delivery - Express Grocery App</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Font Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                            950: '#022c22'
+                        },
+                        amber: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS Styles -->
+    <style>
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            background-color: #022c22;
+        }
+
+        .app-screen {
+            display: none !important;
+            height: 100%;
+            width: 100%;
+        }
+
+        .app-screen.active {
+            display: flex !important;
+        }
+
+        .auth-bg-wrapper {
+            background-image: linear-gradient(to bottom, rgba(2, 44, 34, 0.88), rgba(15, 23, 42, 0.94)), 
+                              url('https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .glass-auth-box {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body class="h-full w-full select-none text-slate-800 antialiased bg-slate-100">
+
+    <!-- TOAST NOTIFICATION BANNER -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform -translate-y-24 opacity-0 transition-all duration-300 ease-out bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 pointer-events-none border border-slate-700">
+        <div id="toastIcon" class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></div>
+        <div id="toastMsg" class="text-xs sm:text-sm font-semibold">Notification message</div>
+    </div>
+
+    <!-- ORDER PLACED SUCCESS CONFIRMATION MODAL -->
+    <div id="orderSuccessModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-4 transform scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar border border-slate-100">
+            <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner animate-bounce">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+                <h3 class="text-2xl font-black text-slate-900">Payment Successful!</h3>
+                <p class="text-xs text-slate-500 mt-1">Order ID: #KSD-<span id="modalOrderId">84920</span> • Express Delivery</p>
+            </div>
+            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-left space-y-2 text-xs text-slate-600">
+                <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                    <span class="font-medium text-slate-500">Delivery Speed:</span>
+                    <span class="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">⚡ 15 - 20 Mins</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium">Customer:</span>
+                    <span id="modalCustomerName" class="font-bold text-slate-800">Valued Customer</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium">Payment Mode:</span>
+                    <span id="modalPaymentMode" class="font-bold text-emerald-700 uppercase">UPI Payment</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium">Delivery Address:</span>
+                    <span id="modalAddress" class="font-bold text-slate-800">Home Address</span>
+                </div>
+                <div class="flex justify-between pt-2 border-t border-slate-200">
+                    <span class="font-bold text-slate-900 text-sm">Total Paid:</span>
+                    <span id="modalTotalPaid" class="font-black text-emerald-600 text-base">₹0</span>
+                </div>
+            </div>
+            <button onclick="closeSuccessModal()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition transform active:scale-98 text-sm">
+                Continue Shopping
+            </button>
+        </div>
+    </div>
+
+    <!-- PAYMENT METHOD SELECTION MODAL -->
+    <div id="paymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 transform scale-95 transition-transform duration-300 max-h-[92vh] overflow-y-auto custom-scrollbar border border-slate-100">
+            
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-slate-900 text-base">Select Payment Method</h3>
+                        <p class="text-[11px] text-slate-500 font-medium">100% Encrypted & Secure Checkout</p>
+                    </div>
+                </div>
+                <button onclick="closePaymentModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Total Summary Header -->
+            <div class="bg-slate-900 text-white p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] text-slate-400 block font-semibold">Total Payable Amount</span>
+                    <span id="payAmountDisplay" class="text-xl font-black text-emerald-400">₹0</span>
+                </div>
+                <span class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold px-3 py-1 rounded-full uppercase">
+                    Kiran Shop Express
+                </span>
+            </div>
+
+            <!-- Delivery Address Input in Payment -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Delivery Address</label>
+                <input type="text" id="payDeliveryAddress" required placeholder="Enter complete doorstep address..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <!-- Payment Mode Tabs -->
+            <div class="space-y-3">
+                <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">Choose Payment Option</label>
+                
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="switchPayTab('upi')" id="tab-upi" class="pay-tab active py-2.5 px-2 rounded-xl border border-emerald-600 bg-emerald-50 text-emerald-800 font-bold text-xs flex flex-col items-center justify-center space-y-1 transition">
+                        <i class="fa-solid fa-qrcode text-base"></i>
+                        <span>UPI Pay</span>
+                    </button>
+                    <button type="button" onclick="switchPayTab('card')" id="tab-card" class="pay-tab py-2.5 px-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs flex flex-col items-center justify-center space-y-1 transition hover:bg-slate-100">
+                        <i class="fa-solid fa-credit-card text-base"></i>
+                        <span>Debit / Card</span>
+                    </button>
+                    <button type="button" onclick="switchPayTab('cod')" id="tab-cod" class="pay-tab py-2.5 px-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs flex flex-col items-center justify-center space-y-1 transition hover:bg-slate-100">
+                        <i class="fa-solid fa-hand-holding-dollar text-base"></i>
+                        <span>Cash (COD)</span>
+                    </button>
+                </div>
+
+                <!-- 1. UPI Payment Form -->
+                <div id="paySection-upi" class="pay-section space-y-3 bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Quick UPI App</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="flex items-center space-x-2 border border-slate-200 bg-white p-2 rounded-xl cursor-pointer hover:border-emerald-500">
+                                <input type="radio" name="upiApp" value="GPay" checked class="accent-emerald-600">
+                                <span class="text-xs font-bold text-slate-800">Google Pay</span>
+                            </label>
+                            <label class="flex items-center space-x-2 border border-slate-200 bg-white p-2 rounded-xl cursor-pointer hover:border-emerald-500">
+                                <input type="radio" name="upiApp" value="PhonePe" class="accent-emerald-600">
+                                <span class="text-xs font-bold text-slate-800">PhonePe</span>
+                            </label>
+                            <label class="flex items-center space-x-2 border border-slate-200 bg-white p-2 rounded-xl cursor-pointer hover:border-emerald-500">
+                                <input type="radio" name="upiApp" value="Paytm" class="accent-emerald-600">
+                                <span class="text-xs font-bold text-slate-800">Paytm</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Enter UPI ID / VPA</label>
+                        <input type="text" id="upiIdInput" placeholder="username@upi / mobile@ybl" value="kiran@upi" class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <!-- QR Placeholder -->
+                    <div class="flex items-center space-x-3 bg-white p-3 rounded-xl border border-slate-200">
+                        <div class="w-14 h-14 bg-slate-900 rounded-lg flex items-center justify-center text-white text-2xl shrink-0">
+                            <i class="fa-solid fa-qrcode"></i>
+                        </div>
+                        <div class="text-[11px] text-slate-600">
+                            <span class="font-bold text-slate-900 block">Scan QR Code on Delivery</span>
+                            <span>Auto-generated instant payment request will be sent to your UPI app.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Card Payment Form -->
+                <div id="paySection-card" class="pay-section hidden space-y-3 bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Cardholder Name</label>
+                        <input type="text" id="cardNameInput" placeholder="Name on Card" class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Card Number</label>
+                        <div class="relative">
+                            <input type="text" id="cardNumberInput" maxlength="19" placeholder="4532 •••• •••• 8892" class="w-full pl-3.5 pr-10 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                            <span class="absolute right-3 top-2.5 text-slate-400 text-sm"><i class="fa-solid fa-credit-card"></i></span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Expiry (MM/YY)</label>
+                            <input type="text" id="cardExpiryInput" maxlength="5" placeholder="12/28" class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">CVV</label>
+                            <input type="password" id="cardCvvInput" maxlength="3" placeholder="•••" class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Cash on Delivery Form -->
+                <div id="paySection-cod" class="pay-section hidden p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-1 text-xs text-amber-900">
+                    <div class="flex items-center space-x-2 font-bold text-amber-800">
+                        <i class="fa-solid fa-truck-ramp-box"></i>
+                        <span>Cash / Pay on Delivery</span>
+                    </div>
+                    <p class="text-[11px]">Pay via cash or UPI directly to our delivery agent upon receiving your grocery items.</p>
+                </div>
+            </div>
+
+            <!-- Submit Pay Button -->
+            <button id="submitPayBtn" onclick="processFinalPayment()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl shadow-lg shadow-emerald-600/30 transition transform active:scale-98 flex items-center justify-center space-x-2 text-sm">
+                <i class="fa-solid fa-lock text-xs"></i>
+                <span id="payBtnText">Complete Payment & Place Order</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 1. SIGNUP SCREEN                           -->
+    <!-- ========================================== -->
+    <section id="signup-screen" class="app-screen active auth-bg-wrapper flex items-center justify-center p-4">
+        <div class="glass-auth-box w-full max-w-md p-7 sm:p-8 rounded-3xl space-y-5 my-auto">
+            <div class="text-center space-y-1">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white text-xl shadow-lg shadow-emerald-600/30 mb-1">
+                    <i class="fa-solid fa-truck-fast"></i>
+                </div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight">Kiran Shop Delivery</h1>
+                <p class="text-xs font-semibold text-emerald-700">Create account to proceed to website</p>
+            </div>
+
+            <form onsubmit="handleSignupSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Full Name</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs"><i class="fa-regular fa-user"></i></span>
+                        <input type="text" id="signupName" required placeholder="Full Name" class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Mobile Number</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs"><i class="fa-solid fa-phone"></i></span>
+                        <input type="tel" id="signupPhone" required placeholder="10-digit phone number" class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Email Address</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs"><i class="fa-regular fa-envelope"></i></span>
+                        <input type="email" id="signupEmail" required placeholder="name@example.com" class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="signupPassword" required placeholder="••••••••" class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow-lg shadow-emerald-600/30 transition transform active:scale-98 flex items-center justify-center space-x-2 text-sm mt-2">
+                    <span>Create Account & Go To Login</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </form>
+
+            <div class="text-center pt-2 border-t border-slate-200">
+                <p class="text-xs text-slate-600 font-medium">
+                    Already registered? 
+                    <button type="button" onclick="showScreen('login-screen')" class="text-emerald-700 font-black hover:underline ml-1">Login here</button>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 2. LOGIN SCREEN                            -->
+    <!-- ========================================== -->
+    <section id="login-screen" class="app-screen auth-bg-wrapper flex items-center justify-center p-4">
+        <div class="glass-auth-box w-full max-w-md p-7 sm:p-8 rounded-3xl space-y-5 my-auto">
+            <div class="text-center space-y-1">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white text-xl shadow-lg shadow-emerald-600/30 mb-1">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                </div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight">Login Account</h1>
+                <p class="text-xs font-semibold text-emerald-700">Enter your account details to enter store</p>
+            </div>
+
+            <form onsubmit="handleLoginSubmit(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Email Address</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs"><i class="fa-regular fa-envelope"></i></span>
+                        <input type="email" id="loginEmail" required placeholder="name@example.com" class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow-lg shadow-emerald-600/30 transition transform active:scale-98 flex items-center justify-center space-x-2 text-sm">
+                    <span>Login & Enter Store</span>
+                    <i class="fa-solid fa-store text-xs"></i>
+                </button>
+            </form>
+
+            <div class="text-center pt-2 border-t border-slate-200">
+                <p class="text-xs text-slate-600 font-medium">
+                    Don't have an account? 
+                    <button type="button" onclick="showScreen('signup-screen')" class="text-emerald-700 font-black hover:underline ml-1">Sign up first</button>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 3. MAIN STOREFRONT SCREEN (SCREEN-FIT)     -->
+    <!-- ========================================== -->
+    <section id="store-screen" class="app-screen flex flex-col h-screen w-screen overflow-hidden bg-slate-100">
+        
+        <!-- HEADER -->
+        <header class="bg-white border-b border-slate-200 shrink-0 z-20 shadow-xs">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
+                
+                <div class="flex items-center space-x-3 cursor-pointer shrink-0" onclick="filterCategory('All')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white flex items-center justify-center text-lg shadow-md shadow-emerald-600/20">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                    </div>
+                    <div class="hidden sm:block">
+                        <span class="font-black text-slate-900 leading-none text-base block">Kiran Shop</span>
+                        <span class="text-[10px] text-emerald-600 font-black tracking-wider uppercase">EXPRESS DELIVERY</span>
+                    </div>
+                </div>
+
+                <!-- Live Search Input -->
+                <div class="flex-1 max-w-md hidden md:block">
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Search 32+ items (apples, mangoes, milk, butter...)" class="w-full pl-9 pr-4 py-2 bg-slate-100 hover:bg-slate-50 border border-transparent focus:border-emerald-500 focus:bg-white rounded-xl text-xs focus:outline-none transition">
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <div class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
+                        <i class="fa-solid fa-circle-user text-emerald-600"></i>
+                        <span id="navUserName">Customer</span>
+                    </div>
+
+                    <!-- Cart Toggle -->
+                    <button onclick="toggleCartDrawer(true)" class="relative px-3.5 py-2 bg-slate-900 hover:bg-emerald-700 text-white rounded-xl font-extrabold transition flex items-center space-x-2 text-xs shadow-md">
+                        <i class="fa-solid fa-cart-shopping text-sm"></i>
+                        <span class="hidden xs:inline">Cart</span>
+                        <span id="cartBadge" class="bg-amber-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full">0</span>
+                    </button>
+
+                    <button onclick="handleLogout()" title="Logout" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition">
+                        <i class="fa-solid fa-right-from-bracket text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Search Bar -->
+            <div class="px-4 pb-2 sm:hidden">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="mobileSearchInput" oninput="handleSearch()" placeholder="Search 32+ items..." class="w-full pl-8 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500">
+                </div>
+            </div>
+        </header>
+
+        <!-- CATEGORY FILTERS -->
+        <div class="bg-white border-b border-slate-200 px-4 py-2.5 shrink-0 z-10 shadow-xs">
+            <div class="max-w-7xl mx-auto flex items-center space-x-2 overflow-x-auto custom-scrollbar pb-1">
+                <button onclick="filterCategory('All')" class="category-btn active bg-emerald-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition">All Items (32)</button>
+                <button onclick="filterCategory('Fruits')" class="category-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition">🍎 Fresh Fruits</button>
+                <button onclick="filterCategory('Vegetables')" class="category-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition">🥦 Fresh Vegetables</button>
+                <button onclick="filterCategory('Dairy')" class="category-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition">🥛 Dairy & Eggs</button>
+                <button onclick="filterCategory('Staples')" class="category-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition">🌾 Staples & Oils</button>
+                <button onclick="filterCategory('Snacks')" class="category-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition">🧃 Snacks & Beverages</button>
+            </div>
+        </div>
+
+        <!-- MAIN SCROLLABLE PRODUCT GRID -->
+        <main class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6">
+            <div class="max-w-7xl mx-auto space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 id="sectionTitle" class="text-base sm:text-lg font-bold text-slate-900 tracking-tight">All Grocery Essentials</h2>
+                    <span id="productCount" class="text-[11px] font-bold bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full">32 Products</span>
+                </div>
+
+                <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 pb-6">
+                    <!-- Dynamic Product Cards -->
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-white border-t border-slate-200 py-2.5 px-4 text-center shrink-0 text-[11px] text-slate-500 font-medium">
+            <p>&copy; 2026 Kiran Shop Delivery • Express Doorstep Service</p>
+        </footer>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 4. SLIDE-OVER CART DRAWER                  -->
+    <!-- ========================================== -->
+    <div id="cartDrawer" class="fixed inset-0 z-50 pointer-events-none opacity-0 transition-opacity duration-300">
+        <div id="cartBackdrop" onclick="toggleCartDrawer(false)" class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"></div>
+
+        <div id="cartPanel" class="absolute top-0 right-0 h-full w-full max-w-sm sm:max-w-md bg-white shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-out pointer-events-auto">
+            
+            <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-bag-shopping text-emerald-600 text-lg"></i>
+                    <h3 class="font-bold text-slate-900 text-base">Your Shopping Cart</h3>
+                </div>
+                <button onclick="toggleCartDrawer(false)" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <div id="cartItemsContainer" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+                <!-- Cart items populated dynamically -->
+            </div>
+
+            <div class="p-4 border-t border-slate-200 bg-slate-50 shrink-0 space-y-3">
+                <div class="space-y-1 text-xs text-slate-600 pt-1">
+                    <div class="flex justify-between">
+                        <span>Items Subtotal</span>
+                        <span id="cartSubtotal" class="font-bold text-slate-800">₹0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Delivery Fee (Free over ₹500)</span>
+                        <span id="deliveryFee" class="font-bold text-emerald-600">FREE</span>
+                    </div>
+                    <div class="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
+                        <span>Grand Total</span>
+                        <span id="cartGrandTotal" class="text-emerald-600 text-base">₹0</span>
+                    </div>
+                </div>
+
+                <button onclick="proceedToPaymentModal()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center space-x-2 text-sm">
+                    <span>Proceed to Payment</span>
+                    <i class="fa-solid fa-credit-card text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 5. JAVASCRIPT APPLICATION LOGIC            -->
+    <!-- ========================================== -->
+    <script>
+        // 32+ PRODUCTS CATALOG WITH DIRECT UNSPLASH IMAGES
+        const products = [
+            // Fruits (6)
+            { id: 1, name: "Fresh Organic Apples", category: "Fruits", unit: "1 kg", price: 140, image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=600&q=80" },
+            { id: 2, name: "Alphonso Mangoes", category: "Fruits", unit: "1 kg", price: 190, image: "https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=600&q=80" },
+            { id: 3, name: "Robusta Bananas", category: "Fruits", unit: "1 dozen", price: 50, image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=600&q=80" },
+            { id: 4, name: "Fresh Strawberries", category: "Fruits", unit: "250g", price: 120, image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?auto=format&fit=crop&w=600&q=80" },
+            { id: 5, name: "Sweet Pomegranates", category: "Fruits", unit: "1 kg", price: 160, image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=600&q=80" },
+            { id: 6, name: "Green Seedless Grapes", category: "Fruits", unit: "500g", price: 80, image: "seedlessgrapes.png" },
+
+            // Vegetables (6)
+            { id: 7, name: "Fresh Farm Tomatoes", category: "Vegetables", unit: "1 kg", price: 35, image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=600&q=80" },
+            { id: 8, name: "Fresh Red Onions", category: "Vegetables", unit: "1 kg", price: 40, image: "freshredonion.jpeg" },
+            { id: 9, name: "Fresh Potatoes", category: "Vegetables", unit: "1 kg", price: 30, image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=600&q=80" },
+            { id: 10, name: "Fresh Green Spinach", category: "Vegetables", unit: "1 bunch", price: 25, image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=600&q=80" },
+            { id: 11, name: "Green Capsicum", category: "Vegetables", unit: "500g", price: 45, image: "https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?auto=format&fit=crop&w=600&q=80" },
+            { id: 12, name: "Crunchy Carrots", category: "Vegetables", unit: "1 kg", price: 50, image: "crunchycarrot.jpeg" },
+
+            // Dairy & Eggs (6)
+            { id: 13, name: "Fresh Cow Milk", category: "Dairy", unit: "1 Liter", price: 64, image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80" },
+            { id: 14, name: "Amul Butter", category: "Dairy", unit: "100g", price: 58, image: "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=600&q=80" },
+            { id: 15, name: "Fresh Paneer", category: "Dairy", unit: "200g", price: 90, image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80" },
+            { id: 16, name: "Fresh Dahi Curd", category: "Dairy", unit: "500g", price: 45, image: "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80" },
+            { id: 17, name: "Cheese Slices", category: "Dairy", unit: "200g", price: 130, image: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=600&q=80" },
+            { id: 18, name: "Farm Fresh Eggs", category: "Dairy", unit: "Pack of 6", price: 48, image: "https://images.unsplash.com/photo-1516448620398-c5f44bf9f441?auto=format&fit=crop&w=600&q=80" },
+
+            // Staples & Oils (7)
+            { id: 19, name: "Sona Masoori Rice", category: "Staples", unit: "5 kg", price: 340, image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80" },
+            { id: 20, name: "Royal Basmati Rice", category: "Staples", unit: "1 kg", price: 110, image: "https://images.unsplash.com/photo-1536304929831-ee1ca9d44906?auto=format&fit=crop&w=600&q=80" },
+            { id: 21, name: "Whole Wheat Atta", category: "Staples", unit: "5 kg", price: 250, image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80" },
+            { id: 22, name: "Toor Dal (Arhar)", category: "Staples", unit: "1 kg", price: 150, image: "toordal.jpeg" },
+            { id: 23, name: "Refined Sunflower Oil", category: "Staples", unit: "1 Liter", price: 140, image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80" },
+            { id: 24, name: "Pure Cow Ghee", category: "Staples", unit: "500 ml", price: 320, image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80" },
+            { id: 25, name: "Iodized Crystal Salt", category: "Staples", unit: "1 kg", price: 25, image: "lodizedcrystalsalt.jpeg" },
+
+            // Snacks & Drinks (7)
+            { id: 26, name: "Lays Potato Chips", category: "Snacks", unit: "50g", price: 20, image: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=600&q=80" },
+            { id: 27, name: "Cadbury Dairy Milk", category: "Snacks", unit: "100g", price: 90, image: "https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=600&q=80" },
+            { id: 28, name: "Oreo Cream Biscuits", category: "Snacks", unit: "120g", price: 35, image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=600&q=80" },
+            { id: 29, name: "Cold Coca-Cola Bottle", category: "Snacks", unit: "750 ml", price: 45, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80" },
+            { id: 30, name: "Organic Green Tea", category: "Snacks", unit: "25 bags", price: 160, image: "oraganicgreentea.jpeg" },
+            { id: 31, name: "Fresh Orange Juice", category: "Snacks", unit: "1 Liter", price: 110, image: "https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=600&q=80" },
+            { id: 32, name: "Roasted Salted Almonds", category: "Snacks", unit: "200g", price: 210, image: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?auto=format&fit=crop&w=600&q=80" }
+        ];
+
+        let activeUser = null;
+        let cart = [];
+        let selectedPayMethod = 'upi';
+
+        // LOCALSTORAGE USERS MANAGEMENT
+        function getStoredUsers() {
+            const users = localStorage.getItem('ksd_users_db');
+            return users ? JSON.parse(users) : [];
+        }
+
+        function saveUserToStorage(user) {
+            const users = getStoredUsers();
+            users.push(user);
+            localStorage.setItem('ksd_users_db', JSON.stringify(users));
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(screenId);
+            if (target) target.classList.add('active');
+        }
+
+        // 1. SIGNUP LOGIC
+        function handleSignupSubmit(event) {
+            event.preventDefault();
+            const name = document.getElementById('signupName').value.trim();
+            const phone = document.getElementById('signupPhone').value.trim();
+            const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+            const password = document.getElementById('signupPassword').value.trim();
+
+            const existingUsers = getStoredUsers();
+            if (existingUsers.some(u => u.email === email)) {
+                showToast("This email is already registered! Please login.", "error");
+                document.getElementById('loginEmail').value = email;
+                showScreen('login-screen');
+                return;
+            }
+
+            saveUserToStorage({ name, phone, email, password });
+            showToast("Account created successfully! Please login.", "success");
+            
+            document.getElementById('loginEmail').value = email;
+            document.getElementById('signupName').value = '';
+            document.getElementById('signupPhone').value = '';
+            document.getElementById('signupEmail').value = '';
+            document.getElementById('signupPassword').value = '';
+
+            showScreen('login-screen');
+        }
+
+        // 2. LOGIN LOGIC
+        function handleLoginSubmit(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            const users = getStoredUsers();
+            const validUser = users.find(u => u.email === email && u.password === password);
+
+            if (validUser) {
+                activeUser = validUser;
+                document.getElementById('navUserName').innerText = activeUser.name;
+                showToast(`Welcome back, ${activeUser.name}!`, "success");
+                renderProducts(products);
+                showScreen('store-screen');
+            } else {
+                if (users.some(u => u.email === email)) {
+                    showToast("Incorrect password! Try again.", "error");
+                } else {
+                    showToast("Email not found! Sign up first.", "error");
+                    setTimeout(() => showScreen('signup-screen'), 1200);
+                }
+            }
+        }
+
+        function handleLogout() {
+            activeUser = null;
+            cart = [];
+            updateCartBadge();
+            showToast("Logged out successfully.", "info");
+            showScreen('login-screen');
+        }
+
+        // 3. PRODUCT CATALOG RENDERING
+        function renderProducts(items) {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = "";
+            document.getElementById('productCount').innerText = `${items.length} Products`;
+
+            if (items.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-16 text-center text-slate-400 space-y-2">
+                        <i class="fa-solid fa-magnifying-glass text-4xl"></i>
+                        <p class="text-sm font-semibold">No products found matching your search.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            items.forEach(product => {
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl transition duration-200 flex flex-col justify-between">
+                        <div class="relative h-36 bg-slate-100 overflow-hidden">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover">
+                            <span class="absolute top-2 left-2 bg-white/95 backdrop-blur-md text-slate-800 text-[10px] font-black px-2 py-0.5 rounded-full uppercase shadow-xs">
+                                ${product.unit}
+                            </span>
+                        </div>
+                        <div class="p-3.5 flex-1 flex flex-col justify-between space-y-2">
+                            <div>
+                                <span class="text-[10px] font-extrabold text-emerald-600 block mb-0.5">${product.category}</span>
+                                <h3 class="font-bold text-slate-900 text-xs sm:text-sm leading-tight">${product.name}</h3>
+                            </div>
+                            <div class="flex items-center justify-between pt-1">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 font-bold block">Price</span>
+                                    <span class="text-base font-black text-slate-900">₹${product.price}</span>
+                                </div>
+                                <div class="flex space-x-1">
+                                    <button onclick="addToCart(${product.id})" title="Add to Cart" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-bold transition text-xs flex items-center justify-center">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </button>
+                                    <button onclick="buyNowDirect(${product.id})" class="px-2.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition text-xs shadow-xs">
+                                        Buy Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterCategory(category) {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if (btn.innerText.includes(category) || (category === 'All' && btn.innerText.includes('All'))) {
+                    btn.className = "category-btn active bg-emerald-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition shadow-xs";
+                } else {
+                    btn.className = "category-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition";
+                }
+            });
+
+            document.getElementById('sectionTitle').innerText = category === 'All' ? 'All Grocery Essentials' : category;
+            renderProducts(category === "All" ? products : products.filter(p => p.category === category));
+        }
+
+        function handleSearch() {
+            const query = (document.getElementById('searchInput').value || document.getElementById('mobileSearchInput').value).toLowerCase();
+            renderProducts(products.filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)));
+        }
+
+        // 4. CART & BUY NOW LOGIC
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const cartItem = cart.find(item => item.id === productId);
+
+            if (cartItem) cartItem.quantity += 1;
+            else cart.push({ ...product, quantity: 1 });
+
+            updateCartBadge();
+            showToast(`Added ${product.name} to cart!`, "success");
+        }
+
+        function buyNowDirect(productId) {
+            const product = products.find(p => p.id === productId);
+            cart = [{ ...product, quantity: 1 }];
+            updateCartBadge();
+            openPaymentModal();
+        }
+
+        function updateCartBadge() {
+            document.getElementById('cartBadge').innerText = cart.reduce((sum, i) => sum + i.quantity, 0);
+        }
+
+        function toggleCartDrawer(open) {
+            const drawer = document.getElementById('cartDrawer');
+            const panel = document.getElementById('cartPanel');
+
+            if (open) {
+                renderCartDrawerItems();
+                drawer.classList.remove('pointer-events-none', 'opacity-0');
+                panel.classList.remove('translate-x-full');
+            } else {
+                panel.classList.add('translate-x-full');
+                drawer.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function renderCartDrawerItems() {
+            const container = document.getElementById('cartItemsContainer');
+            container.innerHTML = "";
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 space-y-2 py-12">
+                        <i class="fa-solid fa-basket-shopping text-4xl text-slate-300"></i>
+                        <p class="text-xs font-semibold">Your shopping cart is empty!</p>
+                    </div>
+                `;
+                calculateTotals(0);
+                return;
+            }
+
+            let subtotal = 0;
+            cart.forEach(item => {
+                subtotal += item.price * item.quantity;
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+                        <img src="${item.image}" class="w-10 h-10 rounded-lg object-cover">
+                        <div class="flex-1 px-3">
+                            <h4 class="font-bold text-xs text-slate-900">${item.name}</h4>
+                            <span class="text-[11px] text-slate-500 font-medium">₹${item.price} × ${item.quantity}</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <div class="flex items-center bg-white border border-slate-300 rounded-lg">
+                                <button onclick="changeCartQty(${item.id}, -1)" class="w-6 h-6 flex items-center justify-center text-xs font-bold">-</button>
+                                <span class="px-2 text-xs font-bold text-slate-900">${item.quantity}</span>
+                                <button onclick="changeCartQty(${item.id}, 1)" class="w-6 h-6 flex items-center justify-center text-xs font-bold">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            calculateTotals(subtotal);
+        }
+
+        function changeCartQty(productId, delta) {
+            const item = cart.find(i => i.id === productId);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) cart = cart.filter(i => i.id !== productId);
+            }
+            updateCartBadge();
+            renderCartDrawerItems();
+        }
+
+        function calculateTotals(subtotal) {
+            const deliveryFee = (subtotal >= 500 || subtotal === 0) ? 0 : 30;
+            const grandTotal = subtotal + deliveryFee;
+
+            document.getElementById('cartSubtotal').innerText = `₹${subtotal}`;
+            document.getElementById('deliveryFee').innerText = deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`;
+            document.getElementById('cartGrandTotal').innerText = `₹${grandTotal}`;
+            document.getElementById('payAmountDisplay').innerText = `₹${grandTotal}`;
+        }
+
+        function proceedToPaymentModal() {
+            if (cart.length === 0) {
+                showToast("Your cart is empty!", "error");
+                return;
+            }
+            toggleCartDrawer(false);
+            openPaymentModal();
+        }
+
+        // 5. PAYMENT MODAL CONTROLS & SWITCHING
+        function openPaymentModal() {
+            const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+            const deliveryFee = (subtotal >= 500 || subtotal === 0) ? 0 : 30;
+            document.getElementById('payAmountDisplay').innerText = `₹${subtotal + deliveryFee}`;
+
+            const modal = document.getElementById('paymentModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('div').classList.remove('scale-95');
+        }
+
+        function closePaymentModal() {
+            const modal = document.getElementById('paymentModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('div').classList.add('scale-95');
+        }
+
+        function switchPayTab(tab) {
+            selectedPayMethod = tab;
+            document.querySelectorAll('.pay-tab').forEach(t => {
+                t.className = "pay-tab py-2.5 px-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs flex flex-col items-center justify-center space-y-1 transition hover:bg-slate-100";
+            });
+            document.getElementById(`tab-${tab}`).className = "pay-tab active py-2.5 px-2 rounded-xl border border-emerald-600 bg-emerald-50 text-emerald-800 font-bold text-xs flex flex-col items-center justify-center space-y-1 transition";
+
+            document.querySelectorAll('.pay-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`paySection-${tab}`).classList.remove('hidden');
+        }
+
+        // 6. PROCESS FINAL PAYMENT
+        function processFinalPayment() {
+            const address = document.getElementById('payDeliveryAddress').value.trim();
+            if (!address) {
+                showToast("Please enter delivery address!", "error");
+                return;
+            }
+
+            if (selectedPayMethod === 'upi') {
+                const upiId = document.getElementById('upiIdInput').value.trim();
+                if (!upiId) {
+                    showToast("Please enter a valid UPI ID!", "error");
+                    return;
+                }
+            } else if (selectedPayMethod === 'card') {
+                const name = document.getElementById('cardNameInput').value.trim();
+                const cardNum = document.getElementById('cardNumberInput').value.trim();
+                const expiry = document.getElementById('cardExpiryInput').value.trim();
+                const cvv = document.getElementById('cardCvvInput').value.trim();
+
+                if (!name || cardNum.length < 12 || !expiry || cvv.length < 3) {
+                    showToast("Please fill valid Card details!", "error");
+                    return;
+                }
+            }
+
+            // SIMULATE PAYMENT PROCESSING
+            const btn = document.getElementById('submitPayBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Processing Payment...</span>`;
+
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i> <span>Complete Payment & Place Order</span>`;
+
+                closePaymentModal();
+
+                const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+                const deliveryFee = (subtotal >= 500) ? 0 : 30;
+                const totalPaid = subtotal + deliveryFee;
+
+                // POPULATE SUCCESS MODAL
+                document.getElementById('modalOrderId').innerText = Math.floor(10000 + Math.random() * 90000);
+                document.getElementById('modalCustomerName').innerText = activeUser ? activeUser.name : "Valued Customer";
+                document.getElementById('modalPaymentMode').innerText = selectedPayMethod === 'upi' ? 'UPI Payment' : (selectedPayMethod === 'card' ? 'Credit / Debit Card' : 'Cash on Delivery');
+                document.getElementById('modalAddress').innerText = address;
+                document.getElementById('modalTotalPaid').innerText = `₹${totalPaid}`;
+
+                const modal = document.getElementById('orderSuccessModal');
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.querySelector('div').classList.remove('scale-95');
+
+                cart = [];
+                updateCartBadge();
+            }, 1800);
+        }
+
+        function closeSuccessModal() {
+            const modal = document.getElementById('orderSuccessModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('div').classList.add('scale-95');
+        }
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = message;
+            document.getElementById('toastIcon').innerHTML = type === "success" ? `<i class="fa-solid fa-circle-check text-emerald-400"></i>` : `<i class="fa-solid fa-circle-exclamation text-red-400"></i>`;
+            
+            toast.classList.remove('-translate-y-24', 'opacity-0');
+            setTimeout(() => toast.classList.add('-translate-y-24', 'opacity-0'), 3200);
+        }
+
+        // INITIAL LAUNCH: Strictly activate Signup Screen first
+        window.addEventListener('DOMContentLoaded', () => {
+            showScreen('signup-screen');
+        });
+    </script>
+</body>
+</html>
